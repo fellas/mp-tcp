@@ -1,0 +1,87 @@
+---
+
+
+- hosts: 192.168.253.181
+  become: true
+  tasks:
+  
+  - name: Instalacion de vim
+    apt:
+      name: vim
+      state: present
+
+  - name: Agregar Repositorio de Maven 
+    shell: apt-add-repository ppa:andrei-pozolotin/maven3
+
+  - name: Agregar Repositorio de Java 8
+    shell: add-apt-repository ppa:webupd8team/java -y
+	
+  - name: Crea el directorio /root/MPTCP 
+    file: path=/root/MPTCP state=directory owner=root group=root
+
+  - name: copiar archivo que contiene el codigo desarrollado y descomprimirlo 
+    unarchive:
+      src=/home/fellas/Desktop/bottleneck-Mptcpclean.tar.gz 
+      dest=/root/MPTCP/ 
+
+  - name: Agregar las llaves del servidor que se encuentra los repositorios de MPTCP keyserver
+    apt_key:
+      keyserver: keys.gnupg.net
+      id: 379CE192D401AB61
+      state: present
+	  
+  - name: Instalacion csh
+    apt:
+      name: csh
+      state: present
+	    
+  - name: Instalar el repositorio de MPTCP
+    shell: if [ `cat /etc/apt/sources.list | grep -c "dl.bintray.com/cpaasch/deb"` == 1 ]; 
+	then echo "ya se encuentra"; 
+	else echo "deb https://dl.bintray.com/cpaasch/deb jessie main" >> cat /etc/apt/sources.list ; fi
+
+
+  - name: Actualizar a apt packages
+    become: true
+    apt:
+      update_cache: yes
+
+  - name: Instalacion Jdk 7
+    apt:
+      name: openjdk-7-jdk
+      state: present	  
+
+  - name: Instalacion Java 8
+    apt:
+      name: oracle-java8-installer
+      state: present
+	  
+  - name: Instalacion Maven3
+    apt:
+      name: maven3
+      state: present
+
+  - name: Instalacion mininet
+    apt:
+      name: mininet
+      state: present	  
+	  
+  - name: Instalacion del paquete MPTCP
+    apt:
+      name: linux-mptcp
+      state: present
+
+  - name: Agregar archivo settings.xml en .m2
+    shell: cp -n ~/.m2/settings.xml{,.orig} ; wget -q -O - https://raw.githubusercontent.com/opendaylight/odlparent/master/settings.xml > ~/.m2/settings.xml
+  
+  - name: ejecutar maven clean install en la carpeta bottleneck-Mptcp 
+    shell: cd /root/MPTCP/bottleneck-Mptcp/
+    shell: mvn clean install
+    args:
+      chdir: /root/MPTCP/bottleneck-Mptcp/
+
+  - name: Reiniciar el Host Cliente 
+    command: /sbin/shutdown -r +1
+    async: 0
+    poll: 0
+    ignore_errors: true
