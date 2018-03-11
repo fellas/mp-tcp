@@ -1,7 +1,7 @@
 ---
 
 
-- hosts: 192.168.253.181
+- hosts: 192.168.100.178
   become: true
   tasks:
   
@@ -15,13 +15,13 @@
 
   - name: Agregar Repositorio de Java 8
     shell: add-apt-repository ppa:webupd8team/java -y
-	
+
   - name: Crea el directorio /root/MPTCP 
     file: path=/root/MPTCP state=directory owner=root group=root
 
   - name: copiar archivo que contiene el codigo desarrollado y descomprimirlo 
     unarchive:
-      src=/home/fellas/Desktop/bottleneck-Mptcpclean.tar.gz 
+      src=/home/odl/Desktop/bottleneck-Mptcp2.tar.gz 
       dest=/root/MPTCP/ 
 
   - name: Agregar las llaves del servidor que se encuentra los repositorios de MPTCP keyserver
@@ -29,16 +29,19 @@
       keyserver: keys.gnupg.net
       id: 379CE192D401AB61
       state: present
-	  
+  - name: Agregar las llaves del servidor que se encuentra los repositorios de MPTCP keyserver
+    shell: apt-key adv --keyserver hkp://keys.gnupg.net --recv-keys 379CE192D401AB61
+
+  - name: Instalar el repositorio de MPTCP
+    shell: if [ `cat /etc/apt/sources.list | grep -c "dl.bintray.com/cpaasch/deb"` == 1 ]; then echo "ya se encuentra"; else echo "deb https://dl.bintray.com/cpaasch/deb jessie main" >> /etc/apt/sources.list ; fi
+
   - name: Instalacion csh
     apt:
       name: csh
       state: present
-	    
+
   - name: Instalar el repositorio de MPTCP
-    shell: if [ `cat /etc/apt/sources.list | grep -c "dl.bintray.com/cpaasch/deb"` == 1 ]; 
-	then echo "ya se encuentra"; 
-	else echo "deb https://dl.bintray.com/cpaasch/deb jessie main" >> cat /etc/apt/sources.list ; fi
+    shell: if [ `cat /etc/apt/sources.list | grep -c "dl.bintray.com/cpaasch/deb"` == 1 ]; then echo "ya se encuentra"; else echo "deb https://dl.bintray.com/cpaasch/deb jessie main" >> cat /etc/apt/sources.list ; fi
 
 
   - name: Actualizar a apt packages
@@ -49,33 +52,34 @@
   - name: Instalacion Jdk 7
     apt:
       name: openjdk-7-jdk
-      state: present	  
-
-  - name: Instalacion Java 8
-    apt:
-      name: oracle-java8-installer
       state: present
-	  
-  - name: Instalacion Maven3
+  - name: Intalacion de Mininet
     apt:
-      name: maven3
+      name: git
       state: present
+  - name: Intalacion de Mininet	  
+    shell: git clone git://github.com/mininet/mininet; mininet/util/install.sh -a
 
-  - name: Instalacion mininet
-    apt:
-      name: mininet
-      state: present	  
-	  
   - name: Instalacion del paquete MPTCP
     apt:
       name: linux-mptcp
       state: present
 
-  - name: Agregar archivo settings.xml en .m2
-    shell: cp -n ~/.m2/settings.xml{,.orig} ; wget -q -O - https://raw.githubusercontent.com/opendaylight/odlparent/master/settings.xml > ~/.m2/settings.xml
-  
+  - name: Instalacion Maven3
+    apt:
+      name: maven3
+      state: present
+
+  - name: Agregar archivo settings .m2
+    shell: mkdir /root/.m2
+
+  - name: Agregar settings.xml a .m2
+    shell: echo "a" > /root/.m2/settings.xml
+
+  - name: reparar archivo .m2 settings.xml
+    shell: cp -n /root/.m2/settings.xml{,.orig} ; wget -q -O - https://raw.githubusercontent.com/opendaylight/odlparent/master/settings.xml > ~/.m2/settings.xml
+
   - name: ejecutar maven clean install en la carpeta bottleneck-Mptcp 
-    shell: cd /root/MPTCP/bottleneck-Mptcp/
     shell: mvn clean install
     args:
       chdir: /root/MPTCP/bottleneck-Mptcp/
